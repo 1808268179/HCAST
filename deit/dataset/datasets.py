@@ -7,22 +7,10 @@ from torchvision import transforms
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
-from . import custom
-
-
-def _resolve_custom_split_root(data_path, is_train):
-    split_candidates = ['train'] if is_train else ['val', 'test']
-    for split_name in split_candidates:
-        root = os.path.join(data_path, split_name)
-        if os.path.isdir(root):
-            return root
-    raise FileNotFoundError(
-        f"Could not find expected split folder under {data_path}. "
-        f"Tried: {', '.join(split_candidates)}"
-    )
-
-import custom
-import custom_seeds
+try:
+    from . import custom
+except ImportError:
+    import custom
 
 
 def _resolve_custom_split_root(data_path, is_train):
@@ -50,7 +38,10 @@ def build_dataset(is_train, args):
         nb_classes = [num_classes, num_classes]
 
     elif args.data_set == 'CUSTOM-HIER-SUPERPIXEL':
-        from . import custom_seeds
+        try:
+            from . import custom_seeds
+        except ImportError:
+            import custom_seeds
         root = _resolve_custom_split_root(args.data_path, is_train)
         dataset = custom_seeds.ImageFolder(
             root,
