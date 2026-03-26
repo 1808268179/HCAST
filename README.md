@@ -171,6 +171,54 @@ torchrun --nproc_per_node=4 deit/main_hier.py \
   --distributed
 ```
 
+### Custom dataset (folder split: `train/`, `val/`, `test/`)
+If your dataset is already split like:
+```
+your_dataset_root/
+├── train/
+│   ├── class_A/
+│   └── class_B/
+├── val/
+│   ├── class_A/
+│   └── class_B/
+└── test/
+    ├── class_A/
+    └── class_B/
+```
+you can train directly with:
+
+#### Hier-ViT
+```
+python deit/main_hier.py \
+  --model deit_small_patch16_224 \
+  --batch-size 128 \
+  --epochs 100 \
+  --num_workers 8 \
+  --data-set CUSTOM-HIER \
+  --data-path /data/users/jw/data/different_camera/c1_train \
+  --output_dir ./output/custom_hvit \
+  --finetune deit_small_patch16_224-cd65a155.pth
+```
+
+#### H-CAST (superpixel version)
+```
+python deit/main_suppix_hier.py \
+  --model cast_small \
+  --batch-size 128 \
+  --epochs 100 \
+  --num-superpixels 196 --num_workers 8 \
+  --globalkl --gk_weight 0.5 \
+  --data-set CUSTOM-HIER-SUPERPIXEL \
+  --data-path /data/users/jw/data/different_camera/c1_train \
+  --output_dir ./output/custom_hcast \
+  --finetune best_checkpoint.pth
+```
+
+Notes:
+- `train/` is used for training.
+- `val/` is used for validation during training (if `val/` is missing, it falls back to `test/`).
+- For this custom mode, coarse label = fine label (two-level hierarchy with the same class ids).
+
 ---
 
 ## 📊  Evaluation
