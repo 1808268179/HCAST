@@ -24,6 +24,21 @@ import inat21_mini_seeds
 
 import inat18_seeds
 
+import custom
+import custom_seeds
+
+
+def _resolve_custom_split_root(data_path, is_train):
+    split_candidates = ['train'] if is_train else ['val', 'test']
+    for split_name in split_candidates:
+        root = os.path.join(data_path, split_name)
+        if os.path.isdir(root):
+            return root
+    raise FileNotFoundError(
+        f"Could not find expected split folder under {data_path}. "
+        f"Tried: {', '.join(split_candidates)}"
+    )
+
 
 def build_dataset(is_train, args):
     transform = build_transform(is_train, args)
@@ -159,6 +174,32 @@ def build_dataset(is_train, args):
             nb_classes = [52, 26]
         elif args.breeds_sort == 'entity30':
             nb_classes = [120, 30]
+
+    elif args.data_set == 'CUSTOM-HIER':
+        root = _resolve_custom_split_root(args.data_path, is_train)
+        dataset = custom.ImageFolder(
+            root,
+            transform=transform,
+            is_hier=True,
+        )
+        num_classes = len(dataset.classes)
+        nb_classes = [num_classes, num_classes]
+
+    elif args.data_set == 'CUSTOM-HIER-SUPERPIXEL':
+        root = _resolve_custom_split_root(args.data_path, is_train)
+        dataset = custom_seeds.ImageFolder(
+            root,
+            transform=transform,
+            is_hier=True,
+            mean=IMAGENET_DEFAULT_MEAN,
+            std=IMAGENET_DEFAULT_STD,
+            n_segments=args.num_superpixels,
+            compactness=10.0,
+            blur_ops=None,
+            scale_factor=1.0,
+        )
+        num_classes = len(dataset.classes)
+        nb_classes = [num_classes, num_classes]
   
 
 
