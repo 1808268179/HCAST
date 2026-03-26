@@ -21,6 +21,21 @@ def _resolve_custom_split_root(data_path, is_train):
         f"Tried: {', '.join(split_candidates)}"
     )
 
+import custom
+import custom_seeds
+
+
+def _resolve_custom_split_root(data_path, is_train):
+    split_candidates = ['train'] if is_train else ['val', 'test']
+    for split_name in split_candidates:
+        root = os.path.join(data_path, split_name)
+        if os.path.isdir(root):
+            return root
+    raise FileNotFoundError(
+        f"Could not find expected split folder under {data_path}. "
+        f"Tried: {', '.join(split_candidates)}"
+    )
+
 
 def build_dataset(is_train, args):
     transform = build_transform(is_train, args)
