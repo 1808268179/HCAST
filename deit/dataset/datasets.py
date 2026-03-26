@@ -1,28 +1,25 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 import os
-import json
 
-from torchvision import datasets, transforms
-from torchvision.datasets.folder import ImageFolder, default_loader
+from torchvision import transforms
 
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
+from . import custom
 
-import aircraft_seeds
-import aircraft
 
-import birds_seeds
-import birds
-
-import breeds
-import breeds_seeds
-
-import inat21_mini
-import inat21_mini_seeds
-
-import inat18_seeds
+def _resolve_custom_split_root(data_path, is_train):
+    split_candidates = ['train'] if is_train else ['val', 'test']
+    for split_name in split_candidates:
+        root = os.path.join(data_path, split_name)
+        if os.path.isdir(root):
+            return root
+    raise FileNotFoundError(
+        f"Could not find expected split folder under {data_path}. "
+        f"Tried: {', '.join(split_candidates)}"
+    )
 
 import custom
 import custom_seeds
@@ -42,140 +39,7 @@ def _resolve_custom_split_root(data_path, is_train):
 
 def build_dataset(is_train, args):
     transform = build_transform(is_train, args)
-
-        
-
-    if args.data_set == 'AIR-HIER':
-        dataset = aircraft.FGVCAircraft_Hier(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-        )
-        nb_classes = [100, 70, 30]
-
-
-    elif args.data_set == 'AIR-HIER-SUPERPIXEL':
-        dataset = aircraft_seeds.FGVCAircraft(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-            is_hier=True,
-            mean=IMAGENET_DEFAULT_MEAN,
-            std=IMAGENET_DEFAULT_STD,
-            n_segments=args.num_superpixels,
-            compactness=10.0,
-            blur_ops=None,
-            scale_factor=1.0,
-        )
-        nb_classes = [100, 70, 30]
-
-    elif args.data_set == 'BIRD-HIER':
-        root = os.path.join(args.data_path, 'train' if is_train else 'test')
-        dataset = birds.ImageFolder(
-            root,
-            transform=transform,
-            is_hier=True,
-            random_seed=args.random_seed,
-            train=is_train,
-        )
-        nb_classes = [200, 38, 13]
-
-
-    elif args.data_set == 'BIRD-HIER-SUPERPIXEL':
-        root = os.path.join(args.data_path, 'train' if is_train else 'test')
-        dataset = birds_seeds.ImageFolder(
-            root,
-            transform=transform,
-            is_hier=True,
-            mean=IMAGENET_DEFAULT_MEAN,
-            std=IMAGENET_DEFAULT_STD,
-            n_segments=args.num_superpixels,
-            compactness=10.0,
-            blur_ops=None,
-            scale_factor=1.0,
-        )
-        nb_classes = [200, 38, 13]
-
-    elif args.data_set == 'INAT18-HIER-SUPERPIXEL':
-        dataset = inat18_seeds.iNatHierDataset(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-            is_hier=True,
-            mean=[0.466, 0.471, 0.380],
-            std=[0.195, 0.194, 0.192],
-            n_segments=args.num_superpixels,
-            compactness=10.0,
-            blur_ops=None,
-            scale_factor=1.0,
-        )
-        nb_classes = [8142, 274, 14]
-
-    elif args.data_set == 'INAT21-MINI-HIER':
-        dataset = inat21_mini.iNat21MiniDataset(
-            args.data_path,
-            transform=transform,
-            is_hier=True,
-            is_train=is_train,
-        )
-        nb_classes = [10000, 1103, 273]
-
-    elif args.data_set == 'INAT21-MINI-HIER-SUPERPIXEL':
-        dataset = inat21_mini_seeds.iNat21MiniDataset(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-            is_hier=True,
-            mean=[0.466, 0.471, 0.380],
-            std=[0.195, 0.194, 0.192],
-            n_segments=args.num_superpixels,
-            compactness=10.0,
-            blur_ops=None,
-            scale_factor=1.0,
-        )
-        nb_classes = [10000, 1103, 273]
-
-
-    
-    elif args.data_set == 'BREEDS-HIER-SUPERPIXEL':
-        dataset = breeds_seeds.BreedsDataset(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-            is_hier=True,
-            sort = args.breeds_sort,
-            path_yn=args.path_yn,
-        )
-        if args.breeds_sort == 'entity13':
-            nb_classes = [130, 13]
-        elif args.breeds_sort == 'living17':
-            nb_classes = [34, 17]
-        elif args.breeds_sort == 'nonliving26':
-            nb_classes = [52, 26]
-        elif args.breeds_sort == 'entity30':
-            nb_classes = [120, 30]
-
-
-
-    elif args.data_set == 'BREEDS-HIER':
-        dataset = breeds.BreedsDataset(
-            args.data_path,
-            is_train=is_train,
-            transform=transform,
-            is_hier=True,
-            sort = args.breeds_sort,
-            path_yn=args.path_yn,
-        )
-        if args.breeds_sort == 'entity13':
-            nb_classes = [130, 13]
-        elif args.breeds_sort == 'living17':
-            nb_classes = [34, 17]
-        elif args.breeds_sort == 'nonliving26':
-            nb_classes = [52, 26]
-        elif args.breeds_sort == 'entity30':
-            nb_classes = [120, 30]
-
-    elif args.data_set == 'CUSTOM-HIER':
+    if args.data_set == 'CUSTOM-HIER':
         root = _resolve_custom_split_root(args.data_path, is_train)
         dataset = custom.ImageFolder(
             root,
@@ -186,6 +50,7 @@ def build_dataset(is_train, args):
         nb_classes = [num_classes, num_classes]
 
     elif args.data_set == 'CUSTOM-HIER-SUPERPIXEL':
+        from . import custom_seeds
         root = _resolve_custom_split_root(args.data_path, is_train)
         dataset = custom_seeds.ImageFolder(
             root,
@@ -200,7 +65,11 @@ def build_dataset(is_train, args):
         )
         num_classes = len(dataset.classes)
         nb_classes = [num_classes, num_classes]
-  
+    else:
+        raise ValueError(
+            f"Unsupported data_set={args.data_set}. "
+            "Only CUSTOM-HIER and CUSTOM-HIER-SUPERPIXEL are supported."
+        )
 
 
     return dataset, nb_classes
